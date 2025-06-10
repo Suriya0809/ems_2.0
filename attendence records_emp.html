@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>HR Attendance Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    th { background-color: #007BFF; color: white; }
+    h2 { color: #333; }
+  </style>
+</head>
+<body>
+  <h2>emp Attendance Dashboard</h2>
+  <table id="attendanceTable" border="1" cellpadding="10">
+    <thead>
+      <tr>
+        <th>Employee Name</th>
+        <th>Date</th>
+        <th>In Time</th>
+        <th>Out Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Rows will be inserted here -->
+    </tbody>
+  </table>
+
+  <!-- Firebase SDK -->
+ <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDXTPYTrDM3ZloJrBGaoMOANClPEYNWTZQ",
+    authDomain: "employee-management-syst-990f5.firebaseapp.com",
+    databaseURL: "https://employee-management-syst-990f5-default-rtdb.firebaseio.com",
+    projectId: "employee-management-syst-990f5",
+    storageBucket: "employee-management-syst-990f5.appspot.com",
+    messagingSenderId: "302985035923",
+    appId: "1:302985035923:web:8848684a54c5739b9b8d66",
+    measurementId: "G-QRKEC2WXN8"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const tableBody = document.querySelector("#attendanceTable tbody");
+
+  async function loadAttendance() {
+    tableBody.innerHTML = `<tr><td colspan="4">Loading...</td></tr>`;
+
+    try {
+      const snapshot = await db.collection("attendance")
+        .orderBy("date", "desc")
+        .get();
+
+      tableBody.innerHTML = ""; // Clear old rows
+
+      if (snapshot.empty) {
+        tableBody.innerHTML = `<tr><td colspan="4">No attendance records found.</td></tr>`;
+        return;
+      }
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+          <td>${data.employeeName || '-'}</td>
+          <td>${data.date || '-'}</td>
+          <td>${data.inTime || '-'}</td>
+          <td>${data.outTime || '-'}</td>
+        `;
+
+        tableBody.appendChild(row);
+      });
+    } catch (error) {
+      console.error("Error loading attendance:", error);
+      tableBody.innerHTML = `<tr><td colspan="4">Error loading data.</td></tr>`;
+    }
+  }
+
+  loadAttendance();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body {
+      display: flex;
+      height: 100vh;
+      background-color: #f4f6f9;
+      overflow: hidden;
+      position: relative;
+    }
+    .sidebar {
+      width: 240px;
+      background-color: #1e3c72;
+      color: white;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      z-index: 2;
+    }
+    .sidebar h2 {
+      margin-bottom: 30px;
+      font-size: 22px;
+      text-align: center;
+    }
+    .sidebar a {
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      color: white;
+      text-decoration: none;
+      background-color: #254a8a;
+      border-radius: 5px;
+      transition: 0.4s ease;
+    }
+    .sidebar a:hover {
+      background-color: #345eaa;
+      transform: translateX(4px);
+    }
+    .main {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+      position: relative;
+      z-index: 2;
+      animation: slideFade 1s ease;
+    }
+    .header {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #1e3c72;
+    }
+    .card-container {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .card {
+      background-color: white;
+      border-radius: 10px;
+      padding: 20px;
+      flex: 1 1 200px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      text-align: center;
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+      animation: pulse 4s infinite ease-in-out;
+    }
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    }
+    .card h3 {
+      font-size: 18px;
+      margin-bottom: 10px;
+      color: #1e3c72;
+    }
+    .card p {
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+    .chart-section, .activity {
+      margin-top: 30px;
+      background-color: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .chart-section h3, .activity h3 {
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: #1e3c72;
+    }
+    .chart-section canvas {
+      width: 100%;
+      max-height: 300px;
+    }
+    .activity ul {
+      list-style: none;
+    }
+    .activity li {
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+      color: #555;
+    }
+    .activity li:last-child {
+      border-bottom: none;
+    }
+    @keyframes slideFade {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 12px rgba(30,60,114,0.2); }
+      50% { box-shadow: 0 0 18px rgba(30,60,114,0.4); }
+    }
+    .shape {
+      position: absolute;
+      border-radius: 50%;
+      background: #1e3c72;
+      opacity: 0.05;
+      z-index: 0;
+      animation: float 8s ease-in-out infinite;
+    }
+    .shape1 {
+      width: 200px;
+      height: 200px;
+      top: -60px;
+      left: -60px;
+    }
+    .shape2 {
+      width: 250px;
+      height: 250px;
+      bottom: -80px;
+      right: -100px;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="shape shape1"></div>
+  <div class="shape shape2"></div>
+  <div class="sidebar">
+    <h2>Admin Panel</h2>
+    <a href="admindash.html">Dashboard</a>
+    <a href="manadminemp.html">Manage Employees</a>
+    <a href="reworked_admin_manage_attendence.html">Attendance Records</a>
+    <a href="adminleaveapp.html">Leave Applications</a>
+    <a href="adminannouncements.html">Announcements</a>
+    <a href="frontpage.html" onclick="logout()">Logout</a>
+  </div>
+  <div class="main">
+    <div class="header">Welcome, Admin</div>
+    <div class="card-container">
+      <div class="card">
+        <h3>Total Employees</h3>
+        <p id="total-employees">0</p>
+      </div>
+      <div class="card">
+        <h3>Present Today</h3>
+        <p id="present-employees">0</p>
+      </div>
+      <div class="card">
+        <h3>Absent Today</h3>
+        <p id="absent-employees">0</p>
+      </div>
+    </div>
+    <div class="chart-section">
+      <h3>Attendance Overview</h3>
+      <canvas id="attendanceChart"></canvas>
+    </div>
+    <div class="activity">
+      <h3>Recent Activity</h3>
+      <ul id="activity-log"></ul>
+    </div>
+  </div>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDXTPYTrDM3ZloJrBGaoMOANClPEYNWTZQ",
+      authDomain: "employee-management-syst-990f5.firebaseapp.com",
+      projectId: "employee-management-syst-990f5",
+      storageBucket: "employee-management-syst-990f5.appspot.com",
+      messagingSenderId: "302985035923",
+      appId: "1:302985035923:web:8848684a54c5739b9b8d66"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const firestore = firebase.firestore();
+
+    function updateDashboardCounts() {
+      let total = 0, present = 0;
+      const today = new Date().toISOString().split("T")[0];
+
+      // Total employees from Realtime Database
+      db.ref("employees").once("value").then(snapshot => {
+        snapshot.forEach(child => {
+          total++;
+        });
+
+        document.getElementById("total-employees").textContent = total;
+
+        // Present count from Firestore attendance collection
+        firestore.collection("attendance")
+          .where("date", "==", today)
+          .get()
+          .then(attendanceSnapshot => {
+            attendanceSnapshot.forEach(doc => {
+              if (doc.data().inTime) present++;
+            });
+
+            document.getElementById("present-employees").textContent = present;
+            document.getElementById("absent-employees").textContent = total - present;
+          });
+      });
+    }
+
+    async function renderAttendanceChart() {
+      const labels = [];
+      const data = [];
+
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const date = d.toISOString().split("T")[0];
+        labels.push(date);
+
+        const snapshot = await firestore.collection("attendance").where("date", "==", date).get();
+        data.push(snapshot.size); // Each doc = 1 present employee
+      }
+
+      const ctx = document.getElementById("attendanceChart").getContext("2d");
+      new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Present Employees",
+            data: data,
+            backgroundColor: "rgba(30, 60, 114, 0.2)",
+            borderColor: "rgba(30, 60, 114, 1)",
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    function logout() {
+      firebase.auth().signOut().then(() => {
+        alert("Logged out successfully");
+        window.location.href = "admin-login.html";
+      }).catch(error => {
+        alert("Logout failed: " + error.message);
+      });
+    }
+
+    updateDashboardCounts();
+    renderAttendanceChart();
+  </script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Announcements</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      background-color: #f4f6f9;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .sidebar {
+      width: 240px;
+      background-color: #1e3c72;
+      color: white;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      z-index: 2;
+    }
+
+    .sidebar h2 {
+      margin-bottom: 30px;
+      font-size: 22px;
+      text-align: center;
+    }
+
+    .sidebar a {
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      color: white;
+      text-decoration: none;
+      background-color: #254a8a;
+      border-radius: 5px;
+      transition: background 0.3s ease;
+    }
+
+    .sidebar a:hover {
+      background-color: #345eaa;
+    }
+
+    .main {
+      flex: 1;
+      padding: 40px;
+      position: relative;
+      z-index: 2;
+      animation: fadeSlideIn 1s ease;
+    }
+
+    .main h1 {
+      font-size: 26px;
+      color: #1e3c72;
+      margin-bottom: 30px;
+    }
+
+    .form-container {
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.08);
+      max-width: 600px;
+      width: 100%;
+      animation: floatUp 1.2s ease;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #1e3c72;
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      padding: 15px;
+      font-size: 14px;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      resize: none;
+      outline: none;
+      transition: border 0.3s ease;
+    }
+
+    textarea:focus {
+      border-color: #1e3c72;
+    }
+
+    button {
+      padding: 12px 24px;
+      background-color: #1e3c72;
+      color: white;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #163263;
+      transform: scale(1.03);
+    }
+
+    .success-message {
+      margin-top: 20px;
+      color: green;
+      font-weight: bold;
+      animation: fadeIn 0.5s ease;
+    }
+
+    /* Animations */
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(40px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes floatUp {
+      0% { transform: scale(0.95); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* Background Floating Shapes */
+    .shape {
+      position: absolute;
+      border-radius: 50%;
+      background: #1e3c72;
+      opacity: 0.05;
+      z-index: 0;
+      animation: pulseFloat 8s ease-in-out infinite;
+    }
+
+    .shape1 {
+      width: 200px;
+      height: 200px;
+      top: -50px;
+      left: -50px;
+    }
+
+    .shape2 {
+      width: 250px;
+      height: 250px;
+      bottom: -80px;
+      right: -100px;
+    }
+
+    @keyframes pulseFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+
+    @media (max-width: 768px) {
+      .main {
+        padding: 20px;
+      }
+      .form-container {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Shapes -->
+  <div class="shape shape1"></div>
+  <div class="shape shape2"></div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Admin Panel</h2>
+    <a href="admindash.html">Dashboard</a>
+    <a href="manadminemp.html">Manage Employees</a>
+    <a href="reworked_admin_manage_attendence.html">Attendance Records</a>
+    <a href="adminleaveapp.html">Leave Applications</a>
+    <a href="adminannouncements.html">Announcements</a>
+    <a href="frontpage.html" onclick="logout()">Logout</a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main">
+    <h1>Send Announcement</h1>
+    <div class="form-container">
+      <div class="form-group">
+        <label for="announcementText">Message</label>
+        <textarea id="announcementText" placeholder="Write your announcement here..."></textarea>
+      </div>
+      <button onclick="sendAnnouncement()">Send Announcement</button>
+      <div id="message" class="success-message" style="display: none;">Announcement sent successfully!</div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDXTPYTrDM3ZloJrBGaoMOANClPEYNWTZQ",
+      authDomain: "employee-management-syst-990f5.firebaseapp.com",
+      databaseURL: "https://employee-management-syst-990f5-default-rtdb.firebaseio.com",
+      projectId: "employee-management-syst-990f5",
+      storageBucket: "employee-management-syst-990f5.appspot.com",
+      messagingSenderId: "302985035923",
+      appId: "1:302985035923:web:8848684a54c5739b9b8d66"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+
+    function sendAnnouncement() {
+      const text = document.getElementById("announcementText").value.trim();
+      if (!text) return alert("Please enter a message.");
+
+      const timestamp = new Date().toISOString();
+
+      firebase.database().ref("announcements").push({
+        message: text,
+        sender: "Admin",
+        timestamp
+      }).then(() => {
+        document.getElementById("announcementText").value = "";
+        document.getElementById("message").style.display = "block";
+        setTimeout(() => {
+          document.getElementById("message").style.display = "none";
+        }, 3000);
+      });
+    }
+
+    function logout() {
+      firebase.auth().signOut().then(() => {
+        alert("Logged out successfully.");
+        window.location.href = "admin-login.html";
+      });
+    }
+  </script>
+</body>
+</html>

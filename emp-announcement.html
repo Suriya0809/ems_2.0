@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Employee Announcements</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #f4f6f9;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 60px 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .shape {
+      position: absolute;
+      border-radius: 50%;
+      background: #1e3c72;
+      opacity: 0.04;
+      z-index: 0;
+      animation: float 8s ease-in-out infinite;
+    }
+
+    .shape1 {
+      width: 180px;
+      height: 180px;
+      top: -60px;
+      left: -80px;
+    }
+
+    .shape2 {
+      width: 260px;
+      height: 260px;
+      bottom: -100px;
+      right: -80px;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
+    }
+
+    .container {
+      background-color: white;
+      padding: 40px;
+      border-radius: 16px;
+      max-width: 750px;
+      width: 100%;
+      box-shadow: 0 0 25px rgba(30, 60, 114, 0.2);
+      position: relative;
+      z-index: 1;
+      animation: fadeInSlide 0.8s ease;
+    }
+
+    h2 {
+      text-align: center;
+      color: #1e3c72;
+      margin-bottom: 25px;
+      font-size: 26px;
+    }
+
+    .announcement {
+      border-left: 6px solid #1e3c72;
+      background-color: #f9fbfd;
+      padding: 18px 22px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 10px rgba(30, 60, 114, 0.05);
+      animation: fadeInCard 0.6s ease forwards;
+      opacity: 0;
+    }
+
+    .announcement .sender {
+      font-weight: 600;
+      font-size: 14px;
+      color: #1e3c72;
+    }
+
+    .announcement .text {
+      margin: 10px 0;
+      font-size: 15px;
+      color: #333;
+    }
+
+    .announcement .time {
+      font-size: 12px;
+      color: #888;
+      text-align: right;
+    }
+
+    @keyframes fadeInSlide {
+      from { opacity: 0; transform: translateY(40px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInCard {
+      to { opacity: 1; }
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 25px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Shapes -->
+  <div class="shape shape1"></div>
+  <div class="shape shape2"></div>
+
+  <!-- Announcements Container -->
+  <div class="container">
+    <h2>Company Announcements</h2>
+    <div id="announcementList">
+      <!-- Messages will be loaded here -->
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDXTPYTrDM3ZloJrBGaoMOANClPEYNWTZQ",
+      authDomain: "employee-management-syst-990f5.firebaseapp.com",
+      databaseURL: "https://employee-management-syst-990f5-default-rtdb.firebaseio.com",
+      projectId: "employee-management-syst-990f5",
+      storageBucket: "employee-management-syst-990f5.appspot.com",
+      messagingSenderId: "302985035923",
+      appId: "1:302985035923:web:8848684a54c5739b9b8d66"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+
+    const list = document.getElementById('announcementList');
+    const db = firebase.database();
+
+    db.ref("announcements").on("child_added", snapshot => {
+      const data = snapshot.val();
+      const div = document.createElement("div");
+      div.className = "announcement";
+      div.innerHTML = `
+        <div class="sender"> From ${data.sender || "Admin"}</div>
+        <div class="text">${data.message}</div>
+        <div class="time">${new Date(data.timestamp).toLocaleString()}</div>
+      `;
+      list.prepend(div); // Newest first
+    });
+  </script>
+
+</body>
+</html>

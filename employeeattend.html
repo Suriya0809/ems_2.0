@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Employee Attendance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      background: linear-gradient(135deg, #007991, #78ffd6);
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .container {
+      background: #ffffff;
+      padding: 40px;
+      border-radius: 15px;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 0 25px rgba(0, 123, 145, 0.2);
+      z-index: 1;
+      animation: fadeIn 0.8s ease;
+    }
+
+    h2 {
+      color: #007991;
+      margin-bottom: 10px;
+    }
+
+    #employeeName {
+      font-size: 16px;
+      margin-bottom: 20px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    button {
+      padding: 12px 24px;
+      margin: 10px;
+      background-color: #007991;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    button:hover:not(:disabled) {
+      background-color: #006672;
+      transform: scale(1.03);
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    #status {
+      margin-top: 20px;
+      font-weight: bold;
+      color: #444;
+    }
+
+    .shape {
+      position: absolute;
+      border-radius: 50%;
+      background: #ffffff;
+      opacity: 0.1;
+      animation: float 8s ease-in-out infinite;
+    }
+
+    .shape1 {
+      width: 200px;
+      height: 200px;
+      top: -60px;
+      left: -60px;
+    }
+
+    .shape2 {
+      width: 250px;
+      height: 250px;
+      bottom: -100px;
+      right: -100px;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background shapes -->
+  <div class="shape shape1"></div>
+  <div class="shape shape2"></div>
+
+  <!-- Attendance card -->
+  <div class="container">
+    <h2>Employee Attendance</h2>
+    <p id="employeeName">Loading...</p>
+    <button id="markInBtn">Mark In</button>
+    <button id="markOutBtn" disabled>Mark Out</button>
+    <p id="status"></p>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDXTPYTrDM3ZloJrBGaoMOANClPEYNWTZQ",
+      authDomain: "employee-management-syst-990f5.firebaseapp.com",
+      databaseURL: "https://employee-management-syst-990f5-default-rtdb.firebaseio.com",
+      projectId: "employee-management-syst-990f5",
+      storageBucket: "employee-management-syst-990f5.appspot.com",
+      messagingSenderId: "302985035923",
+      appId: "1:302985035923:web:8848684a54c5739b9b8d66"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+
+    const auth = firebase.auth();
+    const rtdb = firebase.database();
+    const db = firebase.firestore();
+
+    const nameField = document.getElementById('employeeName');
+    const inBtn = document.getElementById('markInBtn');
+    const outBtn = document.getElementById('markOutBtn');
+    const status = document.getElementById('status');
+
+    let attendanceDocId = null;
+
+    auth.onAuthStateChanged(async user => {
+      if (!user) {
+        alert("Not logged in. Redirecting...");
+        window.location.href = "login.html";
+        return;
+      }
+
+      const uid = user.uid;
+      const today = new Date().toISOString().split('T')[0];
+
+      try {
+        // Get name from Realtime DB
+        const nameSnap = await rtdb.ref(`employees/${uid}/name`).get();
+        const name = nameSnap.exists() ? nameSnap.val() : user.email;
+        nameField.innerText = `Welcome, ${name}`;
+
+        // Check if already marked
+        const snapshot = await db.collection("attendance")
+          .where("employeeId", "==", uid)
+          .where("date", "==", today)
+          .get();
+
+        if (!snapshot.empty) {
+          const doc = snapshot.docs[0];
+          attendanceDocId = doc.id;
+          const data = doc.data();
+
+          if (data.inTime && !data.outTime) {
+            inBtn.disabled = true;
+            outBtn.disabled = false;
+            status.innerText = `You marked in at: ${data.inTime}`;
+          } else if (data.outTime) {
+            inBtn.disabled = true;
+            outBtn.disabled = true;
+            status.innerText = `You marked in at: ${data.inTime}, out at: ${data.outTime}`;
+          }
+        }
+
+        // Mark In
+        inBtn.onclick = async () => {
+          const now = new Date();
+          const inTime = now.toLocaleTimeString();
+
+          const docRef = await db.collection("attendance").add({
+            employeeId: uid,
+            employeeName: name,
+            inTime,
+            outTime: null,
+            date: today
+          });
+
+          attendanceDocId = docRef.id;
+          inBtn.disabled = true;
+          outBtn.disabled = false;
+          status.innerText = `You marked in at: ${inTime}`;
+        };
+
+        // Mark Out
+        outBtn.onclick = async () => {
+          if (!attendanceDocId) return;
+
+          const outTime = new Date().toLocaleTimeString();
+          await db.collection("attendance").doc(attendanceDocId).update({ outTime });
+
+          outBtn.disabled = true;
+          status.innerText += `, out at: ${outTime}`;
+        };
+
+      } catch (err) {
+        nameField.innerText = "Error loading info.";
+        console.error("Error:", err);
+      }
+    });
+  </script>
+</body>
+</html>

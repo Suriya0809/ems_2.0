@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Employee Attendance</title>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f4f4f4; }
+    h2 { color: #333; }
+    button { padding: 10px 20px; margin: 10px 5px; background-color: #007BFF; border: none; color: white; cursor: pointer; }
+    button:disabled { background-color: #aaa; cursor: not-allowed; }
+    #status { margin-top: 20px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <h2>Employee Attendance</h2>
+  <p id="employeeName">Loading...</p>
+  <button id="markInBtn">Mark In</button>
+  <button id="markOutBtn" disabled>Mark Out</button>
+  <p id="status"></p>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <script>
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDXTPYTrDM3ZloJrBGaoMOANClPEYNWTZQ",
+      authDomain: "employee-management-syst-990f5.firebaseapp.com",
+      databaseURL: "https://employee-management-syst-990f5-default-rtdb.firebaseio.com",
+      projectId: "employee-management-syst-990f5",
+      storageBucket: "employee-management-syst-990f5.appspot.com",
+      messagingSenderId: "302985035923",
+      appId: "1:302985035923:web:8848684a54c5739b9b8d66",
+      measurementId: "G-QRKEC2WXN8"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const rtdb = firebase.database();
+
+    const empNameField = document.getElementById('employeeName');
+    const inBtn = document.getElementById('markInBtn');
+    const outBtn = document.getElementById('markOutBtn');
+    const status = document.getElementById('status');
+
+    let attendanceDocId = null;
+
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        alert("Not logged in! Redirecting...");
+        window.location.href = "login.html";
+        return;
+      }
+
+      const employeeId = user.uid;
+
+      // Fetch employee name from Realtime Database
+      try {
+        const nameSnap = await rtdb.ref(`employees/${employeeId}/name`).get();
+        var employeeName = nameSnap.exists() ? nameSnap.val() : user.email;
+      } catch (error) {
+        console.error("Failed to fetch employee name from Realtime DB:", error);
+        var employeeName = user.email;
+      }
+
+      empNameField.innerText = `Welcome, ${employeeName}`;
+
+      const todayDate = new Date().toISOString().split('T')[0];
+
+      // Check if attendance already marked today
+      const querySnapshot = await db.collection("attendance")
+        .where("employeeId", "==", employeeId)
+        .where("date", "==", todayDate)
+        .get();
+
+      if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0];
+        attendanceDocId = doc.id;
+        const data = doc.data();
+
+        if (data.inTime && !data.outTime) {
+          inBtn.disabled = true;
+          outBtn.disabled = false;
+          status.innerText = `You clocked in at: ${data.inTime}`;
+        } else if (data.inTime && data.outTime) {
+          inBtn.disabled = true;
+          outBtn.disabled = true;
+          status.innerText = `You clocked in at: ${data.inTime}, out at: ${data.outTime}`;
+        }
+      }
+
+      // Remove any previous listeners to avoid duplication (optional, good practice)
+      inBtn.onclick = null;
+      outBtn.onclick = null;
+
+      // Mark In button
+      inBtn.onclick = async () => {
+        const now = new Date();
+        const inTime = now.toLocaleTimeString();
+        const date = now.toISOString().split('T')[0];
+
+        try {
+          const docRef = await db.collection("attendance").add({
+            employeeId,
+            employeeName,
+            inTime,
+            outTime: null,
+            date,
+            role: "employee"
+          });
+
+          attendanceDocId = docRef.id;
+          inBtn.disabled = true;
+          outBtn.disabled = false;
+          status.innerText = `You clocked in at: ${inTime}`;
+        } catch (error) {
+          console.error("Error marking in:", error);
+          alert("Failed to mark attendance. Try again.");
+        }
+      };
+
+      // Mark Out button
+      outBtn.onclick = async () => {
+        const now = new Date();
+        const outTime = now.toLocaleTimeString();
+
+        if (!attendanceDocId) {
+          alert("No attendance record found to mark out.");
+          return;
+        }
+
+        try {
+          await db.collection("attendance").doc(attendanceDocId).update({
+            outTime
+          });
+
+          outBtn.disabled = true;
+          status.innerText += `, out at: ${outTime}`;
+        } catch (error) {
+          console.error("Error marking out:", error);
+          alert("Failed to mark out attendance. Try again.");
+        }
+      };
+    });
+  </script>
+
+</body>
+</html>

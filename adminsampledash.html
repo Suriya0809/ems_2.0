@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+    body {
+      display: flex;
+      height: 100vh;
+      background-color: #f4f6f9;
+      overflow: hidden;
+    }
+    .sidebar {
+      width: 240px;
+      background-color: #1e3c72;
+      color: #fff;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar h2 {
+      margin-bottom: 30px;
+      font-size: 22px;
+      text-align: center;
+    }
+    .sidebar a {
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      color: #fff;
+      text-decoration: none;
+      background-color: #254a8a;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+    .sidebar a:hover {
+      background-color: #345eaa;
+    }
+    .main {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+    .header {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #1e3c72;
+    }
+    .card-container {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .card {
+      background-color: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      flex: 1 1 200px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    .card h3 {
+      font-size: 18px;
+      margin-bottom: 10px;
+      color: #1e3c72;
+    }
+    .card p {
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+    .chart-section {
+      margin-top: 30px;
+      background-color: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .chart-section h3 {
+      font-size: 18px;
+      margin-bottom: 15px;
+      color: #1e3c72;
+    }
+    .chart-section canvas {
+      width: 100%;
+      max-height: 300px;
+    }
+    .activity {
+      margin-top: 30px;
+      background-color: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .activity h3 {
+      font-size: 18px;
+      margin-bottom: 10px;
+      color: #1e3c72;
+    }
+    .activity ul {
+      list-style: none;
+    }
+    .activity li {
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+      color: #555;
+    }
+    .activity li:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Admin Panel</h2>
+    <a href="#">Dashboard</a>
+    <a href="#">Manage Employees</a>
+    <a href="#">Attendance Records</a>
+    <a href="#">Leave Applications</a>
+    <a href="#">Generate Reports</a>
+    <a href="#">Logout</a>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="header">Welcome, Admin</div>
+
+    <!-- Cards -->
+    <div class="card-container">
+      <div class="card">
+        <h3>Total Employees</h3>
+        <p id="total-employees">0</p>
+      </div>
+      <div class="card">
+        <h3>Present Today</h3>
+        <p id="present-employees">0</p>
+      </div>
+      <div class="card">
+        <h3>Absent Today</h3>
+        <p id="absent-employees">0</p>
+      </div>
+    </div>
+
+    <!-- Chart -->
+    <div class="chart-section">
+      <h3>Attendance Overview</h3>
+      <canvas id="attendanceChart"></canvas>
+    </div>
+
+    <!-- Activity -->
+    <div class="activity">
+      <h3>Recent Activity</h3>
+      <ul id="activity-log">
+        <!-- Dynamic Activity Can Be Added -->
+      </ul>
+    </div>
+  </div>
+
+  <!-- Firebase + Chart.js -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDXTPYTrDM3ZloJrBGaoMOANClPEYNWTZQ",
+      authDomain: "employee-management-syst-990f5.firebaseapp.com",
+      databaseURL: "https://employee-management-syst-990f5-default-rtdb.firebaseio.com",
+      projectId: "employee-management-syst-990f5",
+      storageBucket: "employee-management-syst-990f5.appspot.com",
+      messagingSenderId: "302985035923",
+      appId: "1:302985035923:web:8848684a54c5739b9b8d66",
+      measurementId: "G-QRKEC2WXN8"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Fetch employee data
+    function updateDashboardCounts() {
+      db.ref('employees').on('value', snapshot => {
+        let total = 0;
+        let present = 0;
+
+        snapshot.forEach(child => {
+          total++;
+          if (child.val().status === 'present') {
+            present++;
+          }
+        });
+
+        const absent = total - present;
+
+        document.getElementById('total-employees').textContent = total;
+        document.getElementById('present-employees').textContent = present;
+        document.getElementById('absent-employees').textContent = absent;
+      });
+    }
+
+    // Call function to fetch data
+    updateDashboardCounts();
+
+    // Chart.js setup
+    const ctx = document.getElementById('attendanceChart').getContext('2d');
+    const attendanceChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+        datasets: [{
+          label: 'Present Employees',
+          data: [45, 47, 50, 49, 48],
+          backgroundColor: 'rgba(30, 60, 114, 0.2)',
+          borderColor: 'rgba(30, 60, 114, 1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

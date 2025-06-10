@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HR Attendance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: linear-gradient(135deg, #007991, #78ffd6);
+      min-height: 100vh;
+      padding: 30px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .shape {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.1;
+      z-index: 0;
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .shape1 {
+      width: 220px;
+      height: 220px;
+      background: #ffffff;
+      top: -60px;
+      left: -60px;
+    }
+
+    .shape2 {
+      width: 300px;
+      height: 300px;
+      background: #ffffff;
+      bottom: -100px;
+      right: -90px;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+
+    .card {
+      background-color: rgba(255, 255, 255, 0.95);
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(0, 123, 255, 0.2);
+      z-index: 1;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      animation: fadeInUp 1s ease;
+    }
+
+    @keyframes fadeInUp {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    h2 {
+      color: #007991;
+      margin-bottom: 20px;
+    }
+
+    #employeeName {
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    button {
+      padding: 12px 24px;
+      margin: 10px 5px;
+      background-color: #007991;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    button:hover:not(:disabled) {
+      background-color: #006070;
+      transform: scale(1.05);
+    }
+
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+
+    #status {
+      margin-top: 25px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Animated Background Shapes -->
+  <div class="shape shape1"></div>
+  <div class="shape shape2"></div>
+
+  <!-- Attendance Card -->
+  <div class="card">
+    <h2>HR Attendance</h2>
+    <p id="employeeName">Loading...</p>
+    <button id="markInBtn">Mark In</button>
+    <button id="markOutBtn" disabled>Mark Out</button>
+    <p id="status"></p>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <!-- Firebase Logic (Unchanged) -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDXTPYTrDM3ZloJrBGaoMOANClPEYNWTZQ",
+      authDomain: "employee-management-syst-990f5.firebaseapp.com",
+      databaseURL: "https://employee-management-syst-990f5-default-rtdb.firebaseio.com",
+      projectId: "employee-management-syst-990f5",
+      storageBucket: "employee-management-syst-990f5.appspot.com",
+      messagingSenderId: "302985035923",
+      appId: "1:302985035923:web:8848684a54c5739b9b8d66",
+      measurementId: "G-QRKEC2WXN8"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const rtdb = firebase.database();
+
+    const empNameField = document.getElementById('employeeName');
+    const inBtn = document.getElementById('markInBtn');
+    const outBtn = document.getElementById('markOutBtn');
+    const status = document.getElementById('status');
+
+    let attendanceDocId = null;
+
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        alert("Not logged in! Redirecting...");
+        window.location.href = "login.html";
+        return;
+      }
+
+      const hrId = user.uid;
+
+      try {
+        const nameSnap = await rtdb.ref(`hrManagers/${hrId}/name`).get();
+        const hrName = nameSnap.exists() ? nameSnap.val() : user.email;
+        empNameField.innerText = `Welcome, ${hrName}`;
+
+        const todayDate = new Date().toISOString().split('T')[0];
+
+        const snapshot = await db.collection("hr_attendance")
+          .where("hrId", "==", hrId)
+          .where("date", "==", todayDate)
+          .get();
+
+        if (!snapshot.empty) {
+          const doc = snapshot.docs[0];
+          attendanceDocId = doc.id;
+          const data = doc.data();
+
+          if (data.inTime && !data.outTime) {
+            inBtn.disabled = true;
+            outBtn.disabled = false;
+            status.innerText = `You clocked in at: ${data.inTime}`;
+          } else if (data.inTime && data.outTime) {
+            inBtn.disabled = true;
+            outBtn.disabled = true;
+            status.innerText = `You clocked in at: ${data.inTime}, out at: ${data.outTime}`;
+          }
+        }
+
+        inBtn.onclick = async () => {
+          const now = new Date();
+          const inTime = now.toLocaleTimeString();
+          const date = now.toISOString().split('T')[0];
+
+          const docRef = await db.collection("hr_attendance").add({
+            hrId,
+            hrName,
+            inTime,
+            outTime: null,
+            date
+          });
+
+          attendanceDocId = docRef.id;
+          inBtn.disabled = true;
+          outBtn.disabled = false;
+          status.innerText = `You clocked in at: ${inTime}`;
+        };
+
+        outBtn.onclick = async () => {
+          const now = new Date();
+          const outTime = now.toLocaleTimeString();
+
+          if (attendanceDocId) {
+            await db.collection("hr_attendance").doc(attendanceDocId).update({
+              outTime
+            });
+
+            outBtn.disabled = true;
+            status.innerText += `, out at: ${outTime}`;
+          }
+        };
+      } catch (err) {
+        empNameField.innerText = "Error loading name.";
+        console.error("Failed to load HR name:", err);
+      }
+    });
+  </script>
+
+</body>
+</html>

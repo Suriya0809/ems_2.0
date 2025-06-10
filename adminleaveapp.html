@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Leave Applications</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+      box-sizing: border-box;
+    }
+
+    body {
+      display: flex;
+      background-color: #f4f6f9;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 240px;
+      background-color: #1e3c72;
+      color: white;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar h2 {
+      margin-bottom: 30px;
+      font-size: 22px;
+      text-align: center;
+    }
+
+    .sidebar a {
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      color: white;
+      text-decoration: none;
+      background-color: #254a8a;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+
+    .sidebar a:hover {
+      background-color: #345eaa;
+    }
+
+    .main {
+      flex: 1;
+      padding: 30px;
+    }
+
+    .main h1 {
+      margin-bottom: 20px;
+      color: #1e3c72;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      margin-bottom: 40px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background-color: #1e3c72;
+      color: white;
+    }
+
+    select {
+      padding: 6px 10px;
+      border-radius: 5px;
+      margin-right: 5px;
+    }
+
+    .reject-btn {
+      padding: 6px 12px;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .status {
+      font-weight: bold;
+      text-transform: capitalize;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <h2>Admin Panel</h2>
+    <a href="admindash.html">Dashboard</a>
+    <a href="manadminemp.html">Manage Employees</a>
+    <a href="reworked_admin_manage_attendence.html">Attendance Records</a>
+    <a href="adminleaveapp.html">Leave Applications</a>
+    <a href="adminannouncements.html">Announcements</a>
+    <a href="frontpage.html" onclick="logout()">Logout</a>
+  </div>
+
+  <div class="main">
+    <h1>Leave Applications - Employees</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Leave Type</th>
+          <th>From</th>
+          <th>To</th>
+          <th>Reason</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="employee-leaves-body"></tbody>
+    </table>
+
+    <h1>Leave Applications - HRs</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Leave Type</th>
+          <th>From</th>
+          <th>To</th>
+          <th>Reason</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="hr-leaves-body"></tbody>
+    </table>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDXTPYTrDM3ZloJrBGaoMOANClPEYNWTZQ",
+      authDomain: "employee-management-syst-990f5.firebaseapp.com",
+      databaseURL: "https://employee-management-syst-990f5-default-rtdb.firebaseio.com",
+      projectId: "employee-management-syst-990f5",
+      storageBucket: "employee-management-syst-990f5.appspot.com",
+      messagingSenderId: "302985035923",
+      appId: "1:302985035923:web:8848684a54c5739b9b8d66",
+      measurementId: "G-QRKEC2WXN8"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function loadHRLeaves() {
+      const tbody = document.getElementById("hr-leaves-body");
+      tbody.innerHTML = "";
+
+      db.ref("leave_requests").once("value").then(snapshot => {
+        db.ref("hrManagers").once("value").then(hrSnap => {
+          const hrMap = {};
+          hrSnap.forEach(hr => {
+            hrMap[hr.key] = hr.val().name || hr.val().email;
+          });
+
+          snapshot.forEach(userNode => {
+            const uid = userNode.key;
+            if (!(uid in hrMap)) return;
+
+            Object.entries(userNode.val()).forEach(([leaveId, leave]) => {
+              const row = document.createElement("tr");
+              row.innerHTML = `
+                <td>${hrMap[uid]}</td>
+                <td>${leave.type || "-"}</td>
+                <td>${leave.from || "-"}</td>
+                <td>${leave.to || "-"}</td>
+                <td>${leave.reason || "-"}</td>
+                <td class="status">${leave.status || "pending"}</td>
+                <td>
+                  <select onchange="updateHRStatus('${uid}', '${leaveId}', this.value)">
+                    <option value="pending" ${leave.status === "pending" ? "selected" : ""}>Pending</option>
+                    <option value="approved" ${leave.status === "approved" ? "selected" : ""}>Approved</option>
+                    <option value="rejected" ${leave.status === "rejected" ? "selected" : ""}>Rejected</option>
+                  </select>
+                  <button class="reject-btn" onclick="deleteHRLeave('${uid}', '${leaveId}')">Delete</button>
+                </td>
+              `;
+              tbody.appendChild(row);
+            });
+          });
+        });
+      });
+    }
+
+    function loadEmployeeLeaves() {
+      const tbody = document.getElementById("employee-leaves-body");
+      tbody.innerHTML = "";
+
+      db.ref("employees").once("value").then(snapshot => {
+        snapshot.forEach(empSnap => {
+          const empId = empSnap.key;
+          const empData = empSnap.val();
+          const empName = empData.name || empData.email;
+          const leaveApps = empData.leaveApplications || {};
+
+          Object.entries(leaveApps).forEach(([leaveId, leave]) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+              <td>${empName}</td>
+              <td>${leave.leaveType || "-"}</td>
+              <td>${leave.startDate || "-"}</td>
+              <td>${leave.endDate || "-"}</td>
+              <td>${leave.reason || "-"}</td>
+              <td class="status">${leave.status || "Pending"}</td>
+              <td>
+                <select onchange="updateEmployeeStatus('${empId}', '${leaveId}', this.value)">
+                  <option value="Pending" ${leave.status === "Pending" ? "selected" : ""}>Pending</option>
+                  <option value="Approved" ${leave.status === "Approved" ? "selected" : ""}>Approved</option>
+                  <option value="Rejected" ${leave.status === "Rejected" ? "selected" : ""}>Rejected</option>
+                </select>
+                <button class="reject-btn" onclick="deleteEmployeeLeave('${empId}', '${leaveId}')">Delete</button>
+              </td>
+            `;
+            tbody.appendChild(row);
+          });
+        });
+      });
+    }
+
+    function updateHRStatus(uid, leaveId, status) {
+      db.ref(`leave_requests/${uid}/${leaveId}`).update({ status }).then(() => {
+        loadHRLeaves();
+      });
+    }
+
+    function updateEmployeeStatus(empId, leaveId, status) {
+      db.ref(`employees/${empId}/leaveApplications/${leaveId}`).update({ status }).then(() => {
+        loadEmployeeLeaves();
+      });
+    }
+
+    function deleteHRLeave(uid, leaveId) {
+      if (confirm("Are you sure you want to delete this HR leave application?")) {
+        db.ref(`leave_requests/${uid}/${leaveId}`).remove().then(() => {
+          alert("HR Leave deleted.");
+          loadHRLeaves();
+        });
+      }
+    }
+
+    function deleteEmployeeLeave(empId, leaveId) {
+      if (confirm("Are you sure you want to delete this employee leave application?")) {
+        db.ref(`employees/${empId}/leaveApplications/${leaveId}`).remove().then(() => {
+          alert("Employee Leave deleted.");
+          loadEmployeeLeaves();
+        });
+      }
+    }
+
+    loadEmployeeLeaves();
+    loadHRLeaves();
+  </script>
+</body>
+</html>
