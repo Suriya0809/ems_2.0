@@ -5,59 +5,79 @@
   <title>Employee Profile</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
   <style>
-    body {
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
       font-family: 'Poppins', sans-serif;
-      background-color: #f3f5f7;
-      padding: 40px;
-      color: #333;
     }
+
+    body {
+      background: linear-gradient(to right, #1e3c72, #2a5298);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
     .container {
       max-width: 500px;
-      margin: auto;
-      background: #fff;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 100%;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 30px 25px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
     }
+
     h2 {
       text-align: center;
-      color: #1e3c72;
+      color: #ffffff;
+      font-size: 26px;
+      margin-bottom: 25px;
     }
-    label {
+
+    .info-item {
+      margin-bottom: 20px;
+    }
+
+    .label {
+      font-weight: 600;
+      margin-bottom: 6px;
       display: block;
-      margin-top: 15px;
+      color: #ffffff;
     }
-    input, select {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-    input[readonly] {
-      background-color: #e9ecef;
-    }
-    button {
-      margin-top: 20px;
-      width: 100%;
+
+    .value {
       padding: 12px;
-      background-color: #1e3c72;
-      color: white;
-      border: none;
-      font-size: 16px;
-      border-radius: 8px;
-      cursor: pointer;
+      border-radius: 10px;
+      background: #ffffff;
+      color: #101010;
+      font-size: 15px;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
     }
-    button:hover {
-      background-color: #294f9e;
-    }
+
     .message {
       text-align: center;
-      margin-top: 15px;
-      color: green;
+      margin-top: 20px;
+      font-weight: 600;
+      font-size: 15px;
     }
+
     .error {
-      color: red;
+      color: #ffbaba;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 25px 20px;
+      }
+      h2 {
+        font-size: 22px;
+      }
     }
   </style>
 </head>
@@ -65,36 +85,27 @@
 
   <div class="container">
     <h2>My Profile</h2>
-    
-    <label for="name">Name</label>
-    <input type="text" id="name">
 
-    <label for="email">Email</label>
-    <input type="email" id="email" readonly>
+    <div class="info-item">
+      <span class="label">Name</span>
+      <div class="value" id="name">Loading...</div>
+    </div>
 
-    <label for="role">Role</label>
-    <select id="role">
-      <option>Software Engineer</option>
-      <option>Fullstack Developer</option>
-      <option>QA Tester</option>
-      <option>System Administrator</option>
-      <option>Business Analyst</option>
-      <option>Data Analyst</option>
-      <option>Cyber Security Analyst</option>
-      <option>Sales Executive</option>
-    </select>
+    <div class="info-item">
+      <span class="label">Email</span>
+      <div class="value" id="email">Loading...</div>
+    </div>
 
-    <label for="department">Department</label>
-    <select id="department">
-      <option>Software Development</option>
-      <option>Quality Assurance</option>
-      <option>IT Support</option>
-      <option>Business & Data Analytics</option>
-      <option>Cyber Security</option>
-      <option>Sales & Marketing</option>
-    </select>
+    <div class="info-item">
+      <span class="label">Role</span>
+      <div class="value" id="role">Loading...</div>
+    </div>
 
-    <button onclick="updateProfile()">Update Profile</button>
+    <div class="info-item">
+      <span class="label">Department</span>
+      <div class="value" id="department">Loading...</div>
+    </div>
+
     <div id="message" class="message"></div>
   </div>
 
@@ -117,24 +128,27 @@
 
     firebase.initializeApp(firebaseConfig);
 
-    const nameField = document.getElementById('name');
-    const emailField = document.getElementById('email');
-    const roleField = document.getElementById('role');
-    const deptField = document.getElementById('department');
+    const nameDiv = document.getElementById('name');
+    const emailDiv = document.getElementById('email');
+    const roleDiv = document.getElementById('role');
+    const deptDiv = document.getElementById('department');
     const messageBox = document.getElementById('message');
 
     firebase.auth().onAuthStateChanged(user => {
       if (user) {
         const uid = user.uid;
-        emailField.value = user.email;
+        emailDiv.textContent = user.email;
 
         firebase.database().ref('employees/' + uid).once('value')
           .then(snapshot => {
             const data = snapshot.val();
             if (data) {
-              nameField.value = data.name || '';
-              roleField.value = data.role || '';
-              deptField.value = data.department || '';
+              nameDiv.textContent = data.name || 'N/A';
+              roleDiv.textContent = data.role || 'N/A';
+              deptDiv.textContent = data.department || 'N/A';
+            } else {
+              messageBox.textContent = "No profile data found.";
+              messageBox.className = "message error";
             }
           });
       } else {
@@ -142,27 +156,6 @@
         messageBox.className = "message error";
       }
     });
-
-    function updateProfile() {
-      const user = firebase.auth().currentUser;
-      if (!user) return;
-
-      const updatedData = {
-        name: nameField.value.trim(),
-        role: roleField.value,
-        department: deptField.value
-      };
-
-      firebase.database().ref('employees/' + user.uid).update(updatedData)
-        .then(() => {
-          messageBox.textContent = "Profile updated successfully!";
-          messageBox.className = "message";
-        })
-        .catch((error) => {
-          messageBox.textContent = "Error: " + error.message;
-          messageBox.className = "message error";
-        });
-    }
   </script>
 
 </body>
