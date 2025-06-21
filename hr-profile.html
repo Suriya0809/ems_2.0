@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Edit HR Profile</title>
+  <title>HR Profile</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet"/>
   <style>
@@ -44,59 +44,48 @@
       font-size: 14px;
     }
 
-    .profile-item input, .profile-item select {
-      width: 100%;
+    .profile-item .value {
       padding: 10px;
       border-radius: 8px;
-      border: 1px solid #ccc;
+      background: #f0f8fa;
       font-size: 15px;
+      color: #333;
+      border: 1px solid #ccc;
     }
 
-    .save-btn {
-      width: 100%;
-      padding: 12px;
-      background-color: #007991;
-      color: white;
-      font-size: 16px;
-      font-weight: bold;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    .save-btn:hover {
-      background-color: #005f66;
+    .error {
+      color: red;
+      text-align: center;
+      margin-top: 15px;
     }
   </style>
 </head>
 <body>
 
   <div class="profile-card">
-    <h2>Edit Your Profile</h2>
+    <h2>HR Profile</h2>
 
     <div class="profile-item">
-      <label for="name">Full Name</label>
-      <input type="text" id="name" />
+      <label>Full Name</label>
+      <div class="value" id="name">Loading...</div>
     </div>
 
     <div class="profile-item">
-      <label for="role">Role</label>
-      <select id="role">
-        <option value="HR Manager">HR Manager</option>
-        <option value="HR Executive">HR Executive</option>
-      </select>
+      <label>Email</label>
+      <div class="value" id="email">Loading...</div>
     </div>
 
     <div class="profile-item">
-      <label for="department">Department</label>
-      <select id="department">
-        <option value="Recruitment">Recruitment</option>
-        <option value="Training">Training</option>
-      </select>
+      <label>Role</label>
+      <div class="value" id="role">Loading...</div>
     </div>
 
-    <button class="save-btn" onclick="updateProfile()">Save Changes</button>
+    <div class="profile-item">
+      <label>Department</label>
+      <div class="value" id="department">Loading...</div>
+    </div>
+
+    <div class="error" id="errorMsg"></div>
   </div>
 
   <!-- Firebase SDK -->
@@ -119,55 +108,36 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
-    let currentUid;
+    const nameDiv = document.getElementById("name");
+    const emailDiv = document.getElementById("email");
+    const roleDiv = document.getElementById("role");
+    const deptDiv = document.getElementById("department");
+    const errorMsg = document.getElementById("errorMsg");
 
     auth.onAuthStateChanged(async (user) => {
       if (!user) {
-        alert("Please login first.");
-        window.location.href = "login.html";
+        errorMsg.textContent = "Please log in first.";
         return;
       }
 
-      currentUid = user.uid;
-      const ref = db.ref("hrManagers/" + currentUid);
+      const uid = user.uid;
+      emailDiv.textContent = user.email;
 
       try {
-        const snapshot = await ref.get();
+        const snapshot = await db.ref("hrManagers/" + uid).get();
         if (snapshot.exists()) {
           const data = snapshot.val();
-          document.getElementById("name").value = data.name || "";
-          document.getElementById("role").value = data.role || "HR Manager";
-          document.getElementById("department").value = data.department || "Recruitment";
+          nameDiv.textContent = data.name || "N/A";
+          roleDiv.textContent = data.role || "N/A";
+          deptDiv.textContent = data.department || "N/A";
         } else {
-          alert("Profile data not found.");
+          errorMsg.textContent = "Profile data not found.";
         }
       } catch (error) {
-        console.error("Error loading profile:", error);
+        console.error("Error fetching profile:", error);
+        errorMsg.textContent = "Error loading profile. Try again.";
       }
     });
-
-    function updateProfile() {
-      const name = document.getElementById("name").value.trim();
-      const role = document.getElementById("role").value;
-      const department = document.getElementById("department").value;
-
-      if (!name) {
-        alert("Name cannot be empty.");
-        return;
-      }
-
-      db.ref("hrManagers/" + currentUid).update({
-        name: name,
-        role: role,
-        department: department
-      }).then(() => {
-        alert("Profile updated successfully!");
-        window.location.href = "hr-profile.html"; // back to view mode
-      }).catch(error => {
-        console.error("Update failed:", error);
-        alert("Failed to update profile. Try again.");
-      });
-    }
   </script>
 
 </body>
