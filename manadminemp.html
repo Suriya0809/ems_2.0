@@ -92,20 +92,6 @@
       background-color: #dc3545;
       color: white;
     }
-
-    .modal {
-      display: none;
-      position: fixed;
-      top: 20%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.3);
-      z-index: 999;
-      width: 300px;
-    }
   </style>
 </head>
 <body>
@@ -123,272 +109,181 @@
 
   <!-- Main Content -->
   <div class="main">
-    <h1>Employees</h1>
-    <div class="container">
-      <div style="margin-bottom: 20px;">
-        <button onclick="openCreateEmployeeForm()" style="padding: 10px 20px; background-color: #1e3c72; color: white; border: none; border-radius: 5px; margin-right: 10px;">
-          + Create Employee
-        </button>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="employee-table-body"></tbody>
-      </table>
-    </div>
+   <h1>Employees</h1>
+   <style>
+  .container {
+    display: block; /* Ensures proper spacing */
+  }
+</style>
 
-    <h1>HRs</h1>
-    <div style="margin-bottom: 20px;">
-      <button onclick="openCreateHRForm()" style="padding: 10px 20px; background-color: #1e3c72; color: white; border: none; border-radius: 5px; margin-right: 10px;">
-        + Create HR
-      </button>
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Role</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="hr-table-body"></tbody>
-    </table>
-
-    <!-- Edit Modal -->
-    <div id="editModal" class="modal">
-      <h3>Edit User</h3>
-      <input type="hidden" id="editUser Id" />
-      <input type="hidden" id="editUser Type" />
-
-      <label>Name:</label>
-      <input type="text" id="editName" style="width:100%; margin-bottom:10px;" />
-
-      <label>Email:</label>
-      <input type="email" id="editEmail" style="width:100%; margin-bottom:10px;" />
-
-      <div id="hrFields" style="display:none;">
-        <label>Role:</label>
-        <select id="role" style="width:100%; margin-bottom:10px;">
-          <option value="">-- Select Role --</option>
-          <option value="HR Manager">HR Manager</option>
-          <option value="HR Executive">HR Executive</option>
-        </select>
-
-        <label>Department:</label>
-        <select id="department" style="width:100%; margin-bottom:10px;">
-          <option value="">-- Select Department --</option>
-          <option value="Recruitment & Hiring">Recruitment & Hiring</option>
-          <option value="Training">Training</option>
-        </select>
-      </div>
-
-      <div id="empFields" style="display:none;">
-        <label>Role:</label>
-        <select id="empRole" style="width:100%; margin-bottom:10px;">
-          <option value="">Select Role</option>
-          <option>Software Engineer</option>
-          <option>Fullstack Developer</option>
-          <option>QA Tester</option>
-          <option>System Administrator</option>
-          <option>Business Analyst</option>
-          <option>Data Analyst</option>
-          <option>Cyber Security Analyst</option>
-          <option>Sales Executive</option>
-        </select>
-
-        <label>Department:</label>
-        <select id="empDepartment" style="width:100%; margin-bottom:10px;">
-          <option value="">Select Department</option>
-          <option>Software Development</option>
-          <option>Quality Assurance</option>
-          <option>IT Support</option>
-          <option>Business & Data Analytics</option>
-          <option>Cybersecurity</option>
-          <option>Sales & Marketing</option>
-        </select>
-      </div>
-
-      <button onclick="saveChanges()" style="background:#1e3c72; color:white; padding:8px 12px; border:none;">Save</button>
-      <button onclick="closeModal()" style="margin-left:10px; padding:8px 12px;">Cancel</button>
-    </div>
+<div class="container">
+  <div style="margin-bottom: 20px;">
+    <button onclick="openCreateEmployeeForm()" style="padding: 10px 20px; background-color: #1e3c72; color: white; border: none; border-radius: 5px; margin-right: 10px;">
+      + Create Employee
+    </button>
   </div>
+  <table style="margin-top: 20px;">
+    <!-- Table content -->
+  </table>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th><th>Email</th><th>Role</th><th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="employee-table-body"></tbody>
+</table>
+
+<h1>HRs</h1>
+<div style="margin-bottom: 20px;">
+  <button onclick="openCreateHRForm()" 
+          style="padding: 10px 20px; background-color: #1e3c72; color: white; border: none; border-radius: 5px; margin-right: 10px;">
+    + Create HR
+  </button>
+</div>
+
+<table style="margin-top: 20px;">
+  <!-- Table content -->
+</table>
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th><th>Email</th><th>Role</th><th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="hr-table-body"></tbody>
+</table>
+
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <script>
-    // Firebase configuration
+    // ✅ Your Firebase config
     const firebaseConfig = {
-      apiKey: "AIzaSyDXTPYTrDM3ZloJrBGaoMOANClPEYNWTZQ",
-      authDomain: "employee-management-syst-990f5.firebaseapp.com",
-      databaseURL: "https://employee-management-syst-990f5-default-rtdb.firebaseio.com",
-      projectId: "employee-management-syst-990f5",
-      storageBucket: "employee-management-syst-990f5.appspot.com",
-      messagingSenderId: "302985035923",
-      appId: "1:302985035923:web:8848684a54c5739b9b8d66"
-    };
+    apiKey: "YOUR_API_KEY",
+    authDomain: "your-project-id.firebaseapp.com",
+    projectId: "your-project-id",
+    storageBucket: "your-project-id.appspot.com",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID",
+    measurementId: "YOUR_MEASUREMENT_ID"
+  };
 
-    // Initialize Firebase
+    // ✅ Initialize Firebase
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+  // ✅ Firebase initialization (make sure firebaseConfig is already declared)
+  const db = firebase.database();
 
-    const empBody = document.getElementById("employee-table-body");
-    const hrBody = document.getElementById("hr-table-body");
+  const empBody = document.getElementById("employee-table-body");
+  const hrBody = document.getElementById("hr-table-body");
 
-    // Load Employees from "employees/"
-    function loadEmployees() {
-      db.ref("employees").on("value", (snapshot) => {
-        empBody.innerHTML = "";
-        snapshot.forEach((childSnapshot) => {
-          const empId = childSnapshot.key;
-          const data = childSnapshot.val();
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${data.name}</td>
-            <td>${data.email}</td>
-            <td>Employee</td>
-            <td>
-              <button class="edit-btn" onclick="editEmployee('${empId}')">Edit</button>
-              <button class="delete-btn" onclick="deleteEmployee('${empId}')">Delete</button>
-            </td>
-          `;
-          empBody.appendChild(row);
-        });
+  // Load Employees from "employees/"
+  function loadEmployees() {
+    db.ref("employees").on("value", (snapshot) => {
+      empBody.innerHTML = "";
+
+      snapshot.forEach((childSnapshot) => {
+        const empId = childSnapshot.key;
+        const data = childSnapshot.val();
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${data.name}</td>
+          <td>${data.email}</td>
+          <td>Employee</td>
+          <td>
+            <button class="edit-btn" onclick="editEmployee('${empId}', '${data.name}', 'employee')">Edit</button>
+            <button class="delete-btn" onclick="deleteEmployee('${empId}')">Delete</button>
+          </td>
+        `;
+        empBody.appendChild(row);
       });
-    }
+    });
+  }
 
-    // Load HRs from "hrManagers/"
-    function loadHRs() {
-      db.ref("hrManagers").on("value", (snapshot) => {
-        hrBody.innerHTML = "";
-        snapshot.forEach((childSnapshot) => {
-          const hrId = childSnapshot.key;
-          const data = childSnapshot.val();
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${data.name}</td>
-            <td>${data.email}</td>
-            <td>HR</td>
-            <td>
-              <button class="edit-btn" onclick="editHR('${hrId}')">Edit</button>
-              <button class="delete-btn" onclick="deleteHR('${hrId}')">Delete</button>
-            </td>
-          `;
-          hrBody.appendChild(row);
-        });
+  // Load HRs from "hrManagers/"
+  function loadHRs() {
+    db.ref("hrManagers").on("value", (snapshot) => {
+      hrBody.innerHTML = "";
+
+      snapshot.forEach((childSnapshot) => {
+        const hrId = childSnapshot.key;
+        const data = childSnapshot.val();
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${data.name}</td>
+          <td>${data.email}</td>
+          <td>HR</td>
+          <td>
+            <button class="edit-btn" onclick="editHR('${hrId}', '${data.name}')">Edit</button>
+            <button class="delete-btn" onclick="deleteHR('${hrId}')">Delete</button>
+          </td>
+        `;
+        hrBody.appendChild(row);
       });
+    });
+  }
+
+  // Edit employee
+  function editEmployee(empId, currentName, role) {
+    const newName = prompt("Enter new name:", currentName);
+    if (newName) {
+      db.ref("employees/" + empId).update({ name: newName })
+        .then(() => alert("Employee updated successfully."));
     }
+  }
 
-    // Edit employee
-    function editEmployee(empId) {
-      db.ref("employees/" + empId).once("value").then(snapshot => {
-        const data = snapshot.val();
-        showEditModal(empId, "employees", data.name, data.email, data.role, data.department);
-      });
+  // Delete employee
+  function deleteEmployee(empId) {
+    if (confirm("Are you sure you want to delete this employee?")) {
+      db.ref("employees/" + empId).remove()
+        .then(() => alert("Employee deleted."));
     }
+  }
 
-    // Delete employee
-    function deleteEmployee(empId) {
-      if (confirm("Are you sure you want to delete this employee?")) {
-        db.ref("employees/" + empId).remove()
-          .then(() => alert("Employee deleted."));
-      }
+  // Edit HR
+  function editHR(hrId, currentName) {
+    const newName = prompt("Enter new HR name:", currentName);
+    if (newName) {
+      db.ref("hrManagers/" + hrId).update({ name: newName })
+        .then(() => alert("HR updated successfully."));
     }
+  }
 
-    // Edit HR
-    function editHR(hrId) {
-      db.ref("hrManagers/" + hrId).once("value").then(snapshot => {
-        const data = snapshot.val();
-        showEditModal(hrId, "hrManagers", data.name, data.email, data.role, data.department);
-      });
+  // Delete HR
+  function deleteHR(hrId) {
+    if (confirm("Are you sure you want to delete this HR?")) {
+      db.ref("hrManagers/" + hrId).remove()
+        .then(() => alert("HR deleted."));
     }
+  }
 
-    // Delete HR
-    function deleteHR(hrId) {
-      if (confirm("Are you sure you want to delete this HR?")) {
-        db.ref("hrManagers/" + hrId).remove()
-          .then(() => alert("HR deleted."));
-      }
-    }
+  // Load all on page load
+  window.onload = () => {
+    loadEmployees();
+    loadHRs();
+  };
+</script>
+<script>
+  function openCreateEmployeeForm() {
+    // Redirect or show modal
+    //alert("Open Create Employee Form");  // Replace with your actual logic
+     window.location.href = "hr1.html";
+  }
 
-    function showEditModal(id, type, name, email, role, department) {
-      document.getElementById("editUser Id").value = id;
-      document.getElementById("editUser Type").value = type;
-      document.getElementById("editName").value = name || '';
-      document.getElementById("editEmail").value = email || '';
+  function openCreateHRForm() {
+    // Redirect or show modal
+   // alert("Open Create HR Form");  Replace with your actual logic
+     window.location.href = "create-hr.html";
+  }
+</script>
 
-      if (type === "hrManagers") {
-        document.getElementById("hrFields").style.display = "block";
-        document.getElementById("empFields").style.display = "none";
-        document.getElementById("role").value = role || '';
-        document.getElementById("department").value = department || '';
-      } else {
-        document.getElementById("empFields").style.display = "block";
-        document.getElementById("hrFields").style.display = "none";
-        document.getElementById("empRole").value = role || '';
-        document.getElementById("empDepartment").value = department || '';
-      }
-
-      document.getElementById("editModal").style.display = 'block';
-    }
-
-    function closeModal() {
-      document.getElementById("editModal").style.display = 'none';
-    }
-
-    function saveChanges() {
-      const id = document.getElementById("editUser Id").value;
-      const type = document.getElementById("editUser Type").value;
-      const name = document.getElementById("editName").value.trim();
-
-      let role = "", department = "";
-      if (type === "hrManagers") {
-        role = document.getElementById("role").value;
-        department = document.getElementById("department").value;
-      } else {
-        role = document.getElementById("empRole").value;
-        department = document.getElementById("empDepartment").value;
-      }
-
-      if (!name || !role || !department) {
-        alert("All fields are required.");
-        return;
-      }
-
-      firebase.database().ref(`${type}/${id}`).update({
-        name,
-        role,
-        department
-      }).then(() => {
-        alert("Profile updated successfully.");
-        closeModal();
-      }).catch(err => {
-        alert("Error: " + err.message);
-      });
-    }
-
-    // Load all on page load
-    window.onload = () => {
-      loadEmployees();
-      loadHRs();
-    };
-
-    function openCreateEmployeeForm() {
-      window.location.href = "hr1.html";
-    }
-
-    function openCreateHRForm() {
-      window.location.href = "create-hr.html";
-    }
-  </script>
 
 </body>
 </html>
